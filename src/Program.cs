@@ -61,7 +61,7 @@ namespace ExcelConverter
             var excel = ExcelReader.Instance.ReadFile(orgName, Config.Instance);
             if (excel == null)
             {
-                AppLog.Instance.Log($"ExcelReader failed on {orgName}");
+                //AppLog.Instance.Log($"ExcelReader failed on {orgName}");
                 Failed.Add(orgName);
                 return;
             }

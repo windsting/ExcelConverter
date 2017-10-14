@@ -21,7 +21,7 @@ namespace ExcelConverter
             FileInfo fileInfo = new FileInfo(fileName);
             if (!fileInfo.Exists)
             {
-                AppLog.Instance.Log($"file:{fileName} not exist!");
+                AppLog.Instance.Log($"file not found:\n    {fileName}");
                 return null;
             }
 
@@ -33,7 +33,7 @@ namespace ExcelConverter
 
                 if (rowCount < MinRowCount)
                 {
-                    AppLog.Instance.Log($"invalid rowCount:{rowCount} {nameof(MinRowCount)}:{MinRowCount}");
+                    AppLog.Instance.Log($"invalid rowCount:{rowCount} {nameof(MinRowCount)}:{MinRowCount} in file:\n    {fileName}");
                     return null;
                 }
 
@@ -41,15 +41,18 @@ namespace ExcelConverter
                 Func<int, int, string> sCell = (r, c) =>
                 {
                     var value = vCell(r, c);
-                    if (value != null)
-                        return value.ToString();
-                    return null;
+                    return value?.ToString();
                 };
 
                 config = TryParseConfig(sCell(1, 1), sCell(1, 2)) ?? config;
 
                 List<string> keys = FetchKeys(config, colCount, sCell);
                 var keyCount = keys.Count;
+                if(keyCount < 1)
+                {
+                    AppLog.Instance.Log($"name row has no value in file:\n    {fileName}");
+                    return null;
+                }
 
                 JArray array = new JArray();
                 for (int row = config.nameRow+1; row <= rowCount; ++row)
@@ -58,7 +61,8 @@ namespace ExcelConverter
                     Func<int, string> getValue = (c) => sCell(row, c);
                     var dataRow = worksheet.Cells[row, 1, row, keyCount];
                     JObject jobj = GenerateObject(keyCount, getKey, getValue);
-                    array.Add(jobj);
+                    if (jobj != null)
+                        array.Add(jobj);
                 }
 
                 //AppLog.Instance.Log(array.ToString());
