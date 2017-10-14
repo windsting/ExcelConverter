@@ -11,10 +11,13 @@ namespace ExcelConverter
     {
         static void Main(string[] args)
         {
+            if (HelpInfo.HelpPrinted(args))
+                return;
+
             var cfg = Config.FromArgs(args, Config.Instance);
             var json = JsonConvert.SerializeObject(cfg);
 
-            foreach(var fileName in Config.Instance.NoneOption)
+            foreach (var fileName in Config.Instance.NoneOption)
             {
                 Process(Config.Instance.NoneOption);
             }
@@ -30,10 +33,10 @@ namespace ExcelConverter
         static List<string> Succceed = new List<string>();
         static List<string> Failed = new List<string>();
 
-        static string[] ExcelExtensions = new string[] { ".xls", ".xlsx" };
+        public static string[] ExcelExtensions = new string[] { ".xls", ".xlsx" };
         static void Process(IEnumerable<string> paths)
         {
-            foreach(var path in paths)
+            foreach (var path in paths)
             {
                 if (Directory.Exists(path))
                 {
@@ -67,8 +70,11 @@ namespace ExcelConverter
             }
 
             var config = excel.Config;
-            var outName = FileNameConverter.Instance.Convert(orgName, config.outFormat, config);
-            var text = excel.JArray.ToString(config.Formatting);
+            var outName = FileNameConverter.Instance.Convert(orgName, config.OutFormat, config);
+            var formatting = Config.Instance.IsOptionMandatory(nameof(config.Indent))
+                                ? Config.Instance.Formatting
+                                : config.Formatting;
+            var text = excel.JArray.ToString(formatting);
             WriteTextFile(outName, text);
 
             Succceed.Add(orgName);

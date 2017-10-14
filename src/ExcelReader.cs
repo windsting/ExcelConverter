@@ -44,7 +44,7 @@ namespace ExcelConverter
                     return value?.ToString();
                 };
 
-                config = TryParseConfig(sCell(1, 1), sCell(1, 2)) ?? config;
+                config = TryParseConfig(sCell(1, 1)) ?? config;
 
                 List<string> keys = FetchKeys(config, colCount, sCell);
                 var keyCount = keys.Count;
@@ -55,7 +55,7 @@ namespace ExcelConverter
                 }
 
                 JArray array = new JArray();
-                for (int row = config.nameRow+1; row <= rowCount; ++row)
+                for (int row = config.NameRow+1; row <= rowCount; ++row)
                 {
                     Func<int, string> getKey = (c) => keys[c - 1];
                     Func<int, string> getValue = (c) => sCell(row, c);
@@ -72,7 +72,7 @@ namespace ExcelConverter
 
         static bool IsPassProperty(string propertyName)
         {
-            foreach (var postfix in Config.Instance.passPostfix)
+            foreach (var postfix in Config.Instance.PassPostfix)
                 if (propertyName.EndsWith(postfix))
                     return true;
 
@@ -114,11 +114,12 @@ namespace ExcelConverter
         }
 
         const string ConfigMagicKey = "ecconfig";
-        private static Config TryParseConfig(string firstCell, string argString)
+        private static Config TryParseConfig(string firstCell)
         {
             Config config = null;
-            if (firstCell == ConfigMagicKey)
+            if (firstCell != null && firstCell.StartsWith(ConfigMagicKey))
             {
+                var argString = firstCell.Replace(ConfigMagicKey, string.Empty);
                 var args = Regex.Split(argString, @"\s");
                 config = Config.FromArgs(args);
             }
@@ -128,11 +129,12 @@ namespace ExcelConverter
 
         private static List<string> FetchKeys(Config config, int colCount, Func<int, int, string> sCell)
         {
+            var nameRow = config.NameRow;
             List<string> keys = new List<string>();
             for (var col = 1; col <= colCount; ++col)
             {
-                var val = sCell((int)config.nameRow, col);
-                if (val == null)
+                var val = sCell(nameRow, col);
+                if (val == null || string.IsNullOrWhiteSpace(val))
                     break;
                 keys.Add(val);
             }

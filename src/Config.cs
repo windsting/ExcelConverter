@@ -7,11 +7,11 @@ namespace ExcelConverter
 {
     public class Config : Singleton<Config>
     {
-        public string outFormat { get; set; } = "json";
-        public string output { get; set; } = null;
-        public List<string> passPostfix { get; set; } = new List<string>();
+        public string OutFormat { get; set; } = "json";
+        public string Output { get; set; } = null;
+        public List<string> PassPostfix { get; set; } = new List<string>();
         public List<string> ErasePostfix { get; set; } = new List<string>();
-        public int nameRow { get; set; } = 2;
+        public int NameRow { get; set; } = 2;
         public bool Indent { get; set; } = DefaultIndent;
         public bool KeepExtension { get; set; } = DefaultExtensionSetting;
         public bool Quiet { get; set; } = DefaultQuiet;
@@ -29,23 +29,53 @@ namespace ExcelConverter
         const bool DefaultQuiet = false;
         public List<string> NoneOption { get; set; } = new List<string>();
 
+        public List<string> MandatoryOptions = new List<string>();
+
         const BindingFlags FieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty | BindingFlags.IgnoreCase;
-        public int AddField(string strOption, string value = null)
+        public void AddField(string strOption)
         {
-            int jumpCount = 1;  //  most 
+            var parts = strOption.Split('=');
+            strOption = parts[0];
+            var value = parts.Length > 1 ? parts[1] : null;
+
             var name = GetFullName(strOption);
-            var obj = this;
-            var prop = obj.GetType().GetProperty(name, FieldFlags);
+            var prop = this.GetType().GetProperty(name, FieldFlags);
             if (prop == null)
             {
                 throw new ArgumentException($"Invalid FieldName:[{name}] for value:[{value}]");
             }
 
+            try
+            {
+                SetValue(value, prop, strOption);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Instance.Log($"Field:{name} set value:[{value}] got Exception:{ex.ToString()}");
+            }
+        }
+
+        public bool IsOptionMandatory(string optionName)
+        {
+            return MandatoryOptions.Contains(optionName);
+        }
+
+        private void SetValue(string value, PropertyInfo prop, string option)
+        {
+            var obj = this;
             var propName = prop.PropertyType.Name;
+            MandatoryOptions.Add(propName);
             switch (propName)
             {
                 case nameof(Int32):
-                    prop.SetValue(obj, Int32.Parse(value));
+                    {
+                        if (!Int32.TryParse(value, out int iValue))
+                        {
+                            AppLog.Instance.Log($"Invalid value:[{value}] for option:{option}");
+                            return;
+                        }
+                        prop.SetValue(obj, Int32.Parse(value));
+                    }
                     break;
                 case nameof(String):
                     prop.SetValue(obj, value);
@@ -53,12 +83,17 @@ namespace ExcelConverter
                 case "List`1":
                     {
                         var type = prop.PropertyType;
-                        if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
                         {
                             var TType = type.GetGenericArguments()[0];
-                            switch(TType.Name)
+                            switch (TType.Name)
                             {
                                 case nameof(Int32):
+                                    if (!Int32.TryParse(value, out int iValue))
+                                    {
+                                        AppLog.Instance.Log($"Invalid value for option:{option}");
+                                        return;
+                                    }
                                     type.GetMethod($"Add").Invoke(prop.GetValue(obj), new object[] { Int32.Parse(value) });
                                     break;
                                 case nameof(String):
@@ -73,13 +108,10 @@ namespace ExcelConverter
                 case nameof(Boolean):
                     var oldVal = (bool)prop.GetValue(obj);
                     prop.SetValue(obj, !oldVal);
-                    jumpCount = 0;
                     break;
                 default:
                     throw new Exception($"Invalid Config property type:[{prop.PropertyType.Name}], only:[{nameof(Int32)},{nameof(String)}] supported");
             }
-
-            return jumpCount;
         }
 
         #region NamePair
@@ -93,11 +125,13 @@ namespace ExcelConverter
 
         static NamePair[] NamePairs = new NamePair[]
         {
-            NamePair.Create("o",$"{nameof(output)}"),
             NamePair.Create("i",$"{nameof(Indent)}"),
             NamePair.Create("q",$"{nameof(Quiet)}"),
-            NamePair.Create("p",$"{nameof(passPostfix)}"),
+            NamePair.Create("o",$"{nameof(Output)}"),
+            NamePair.Create("k",$"{nameof(KeepExtension)}"),
+            NamePair.Create("p",$"{nameof(PassPostfix)}"),
             NamePair.Create("e",$"{nameof(ErasePostfix)}"),
+            NamePair.Create("n",$"{nameof(NameRow)}"),
         };
 
         static string GetFullName(string shortOption)
@@ -121,18 +155,17 @@ namespace ExcelConverter
 
                 if (current.StartsWith(OptionPrefix))
                 {
-                    var nextIndex = i + 1;
-                    var next = nextIndex < args.Length ? args[nextIndex] : null;
-                    i += config.AddField(current, next);
+                    config.AddField(current);
                 }
                 else
                 {
                     config.NoneOption.Add(current);
-                    if (config == Config.Instance && config.NoneOption.Count == 0)
-                    {
-                        config.NoneOption.Add(System.IO.Directory.GetCurrentDirectory());
-                    }
                 }
+            }
+
+            if (config == Config.Instance && config.NoneOption.Count == 0)
+            {
+                config.NoneOption.Add(System.IO.Directory.GetCurrentDirectory());
             }
 
             return config;

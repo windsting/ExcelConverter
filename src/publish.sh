@@ -17,11 +17,9 @@ cp asset/win10-64.nsi out/
 
 $NSISEXE out/win10-64.nsi
 
-# mv out/ExcelConverter.win-x64/ExcelConverter.win-x64.installer.exe out/
-
 "$BANDIZIP" c -l:9 out/ExcelConverter.linux-x64.zip out/ExcelConverter.linux-x64/
 "$BANDIZIP" c -l:9 out/ExcelConverter.osx-x64.zip out/ExcelConverter.osx-x64/
 "$BANDIZIP" c -l:9 out/ExcelConverter.win-x64.zip out/ExcelConverter.win-x64/
 
-scp out/*.zip out/*.exe $SCP_DEST
+scp out/*.zip $SCP_DEST
 
