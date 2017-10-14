@@ -10,12 +10,13 @@ Section
 
 SetOutPath $INSTDIR
 
-File *
-
+File /r ExcelConverter.win-x64\*.*
 
 WriteUninstaller $INSTDIR\uninstaller.exe
 
 ExecWait '"$INSTDIR\addpath.bat"'
+
+MessageBox MB_OK "Installation Succeed! Enjoy it."
 
 # default section end
 SectionEnd
