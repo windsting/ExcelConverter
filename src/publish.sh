@@ -12,14 +12,14 @@ dotnet publish -c Release -r win-x64 -o out/ExcelConverter.win-x64
 cp asset/install.sh out/ExcelConverter.linux-x64/
 cp asset/install.sh out/ExcelConverter.osx-x64/
 cp asset/addpath.bat out/ExcelConverter.win-x64/
-cp asset/win10-64.nsi out/
+cp asset/win-64.nsi out/
 
 
-$NSISEXE out/win10-64.nsi
+$NSISEXE out/win-64.nsi
 
 "$BANDIZIP" c -l:9 out/ExcelConverter.linux-x64.zip out/ExcelConverter.linux-x64/
 "$BANDIZIP" c -l:9 out/ExcelConverter.osx-x64.zip out/ExcelConverter.osx-x64/
 "$BANDIZIP" c -l:9 out/ExcelConverter.win-x64.zip out/ExcelConverter.win-x64/
 
-scp out/*.zip $SCP_DEST
+scp out/*.zip out/*.exe $SCP_DEST
 

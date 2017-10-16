@@ -3,6 +3,10 @@ OutFile "ExcelConverter.win-x64.installer.exe"
 
 InstallDir "$PROGRAMFILES64\ExcelConverter"
 
+DirText "Choose a folder in which to jinstall the ExcelConverter"
+
+ShowInstDetails show
+
 # SetCompressor /SOLID lzma
 
 # default section start: every NSIS script has least one section
