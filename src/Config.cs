@@ -42,7 +42,7 @@ namespace ExcelConverter
             var prop = this.GetType().GetProperty(name, FieldFlags);
             if (prop == null)
             {
-                throw new ArgumentException($"Invalid FieldName:[{name}] for value:[{value}]");
+                throw new ArgumentException($"Invalid FieldName:[{strOption}] for value:[{value}]");
             }
 
             try

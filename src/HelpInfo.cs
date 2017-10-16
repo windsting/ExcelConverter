@@ -10,10 +10,10 @@ namespace ExcelConverter
         static string[] ShortInfo = new string[]
         {
             "No file or directory specified.",
-            "Usage: ExcelConverter [-i | --indent] [-q | --quiet] [-k | --keepExtension]",
-            "                      [-p=postfixToPass | --passPostfix=postfixToPass]",
-            "                      [-e=postfixToErase | --erasePostfix=postfixToErase]",
-            "                      [-n=rowNumberOfName | --nameRow=rowNumberOfName]",
+            "Usage: ExcelConverter [-i | --indent] [-q | --quiet] [-k | --keep-extension]",
+            "                      [-p=postfixToPass | --postfix-to-pass=postfixToPass]",
+            "                      [-e=postfixToErase | --erase-postfix=postfixToErase]",
+            "                      [-n=rowNumberOfName | --name-row=rowNumberOfName]",
             "                      [excelFilePath | dirContainExcel]... [-o=outputDir]",
             "       ExcelConverter -h | --help",
             "",
@@ -24,7 +24,7 @@ namespace ExcelConverter
             "       ExcelConverter -i Documents/test.xlsx",
             "       ExcelConverter -k data.xlsx",
             "       ExcelConverter Documents/ -o=config_file_dir",
-            "       ExcelConverter -p=ForServer -p=ForWeb -e=ForClient data.xlsx -o=cfg_dir",
+            "       ExcelConverter -p=ForServer -p=ForWeb -e=ForClient data.xlsx -o=cfgDir",
             "       ExcelConverter data.xlsx -n=3",
         };
 
@@ -37,22 +37,25 @@ namespace ExcelConverter
             "  -h, --help           print this help information, and exit immediately",
             "  -i, --indent         Indent output json file",
             "  -q, --quiet          Don't report processing result",
-            "  -o, --output         specify output directory, without this provided, the result",
-            "                       .json file will be output to directory .xlsx file within",
-            "  -k, --keepExtension  keep extension name, i.e. data.xlsx produce data.xlsx.json",
-            "  -p, --postfixToPass  pass column(s) end with specified postfix, this option",
-            "                       can be specified repeatedly",
-            "  -e, --postfixToErase erase postfix for column(s) end with specified postfix,",
-            "                       this option can be specified repeatedly",
-            "  -n, --nameRow        specify the row number for the row contains property names,",
-            "                       default value is 2, left the 1st row for describe name"
+            "  -o, --output         specify output directory, without this provided,",
+            "                       the result .json file will be output to directory",
+            "                       which contain the .xlsx file",
+            "  -k, --keep-extension keep extension name, i.e. data.xlsx produce" ,
+            "                       data.xlsx.json",
+            "  -p, --pass-postfix   pass column(s) end with specified postfix, this",
+            "                       option can be specified repeatedly",
+            "  -e, --erase-postfix  erase postfix for column(s) end with specified",
+            "                       postfix, this option can be specified repeatedly",
+            "  -n, --name-row       specify the row number for the row contains",
+            "                       property names. default value is 2, left the 1st",
+            "                       row for describe name",
         };
 
         static string[] ExtraInfo = new string[] 
         {
             "",
-            "More detail online help: <http://192.168.8.172/wangg/ExcelConverter/wikis/home>",
-            ""
+            "More detail can be found on help page: ",
+            "   <http://192.168.8.172/wangg/ExcelConverter/wikis/home>",
         };
 
         static string[] OptionsForHelp = new string[] { "-h", "--help" };
