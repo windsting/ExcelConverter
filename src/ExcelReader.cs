@@ -88,6 +88,51 @@ namespace ExcelConverter
             return propertyName;
         }
 
+        const string ArraySplitters = "|;,";
+        private static JToken ParseJArray(string value, int level = 0) {
+            if (level == 0 && value.IndexOf(ArraySplitters[0]) < 0) {
+                //  this is not an array notation
+                return null;
+            }
+
+            if(level >= ArraySplitters.Length) {
+                //  last level treat as a token
+                return ParseToken(value);
+            }
+
+            var splitter = ArraySplitters[level];
+            var parts = value.Split(splitter);
+            if (parts.Length > 1) {
+                JArray arr = new JArray();
+                foreach (var part in parts) {
+                    var val = ParseJArray(part, level + 1);
+                    arr.Add(val);
+                }
+                return arr;
+            }
+
+            // this is the element of a [level + 1] dimention array
+            return ParseToken(value);
+        }
+
+        private static JToken ParseToken(string value) {
+            if (long.TryParse(value, out var number))
+                return number;
+
+            return value;
+        }
+
+        private static JToken ParseCell(string value) {
+            if (value == null)
+                return null;
+
+            var array = ParseJArray(value);
+            if (array != null)
+                return array;
+
+            return ParseToken(value);
+        }
+
         private static JObject GenerateObject(int keyCount, Func<int, string> getKey, Func<int, string> getValue)
         {
             JObject jobj = new JObject();
@@ -100,13 +145,11 @@ namespace ExcelConverter
 
                 key = ErasePostfix(key);
 
-                var value = getValue(col);
-                if (long.TryParse(value, out var number))
-                    jobj.Add(key, number);
-                else
-                    jobj.Add(key, value);
+                var stringValue = getValue(col);
+                var cellValue = ParseCell(stringValue);
+                jobj.Add(key, cellValue);
 
-                if (value != null)
+                if (stringValue != null)
                     IsAllPropertyNull = false;
             }
 
