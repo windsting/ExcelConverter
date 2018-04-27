@@ -97,21 +97,34 @@ namespace ExcelConverter
 
             if(level >= ArraySplitters.Length) {
                 //  last level treat as a token
-                return ParseToken(value);
+                return ParseArrayElement(value);
             }
 
             var splitter = ArraySplitters[level];
             var parts = value.Split(splitter);
             if (parts.Length > 1) {
                 JArray arr = new JArray();
+                bool empty = true;
                 foreach (var part in parts) {
                     var val = ParseJArray(part, level + 1);
-                    arr.Add(val);
+                    if (val != null) {
+                        arr.Add(val);
+                        empty = false;
+                    }
                 }
+                if (empty)
+                    return null;
                 return arr;
             }
 
             // this is the element of a [level + 1] dimention array
+            return ParseArrayElement(value);
+        }
+
+        private static JToken ParseArrayElement(string value) {
+            if (string.IsNullOrEmpty(value))
+                return null;
+
             return ParseToken(value);
         }
 
