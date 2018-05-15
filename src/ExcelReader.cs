@@ -160,7 +160,10 @@ namespace ExcelConverter
 
                 var stringValue = getValue(col);
                 var cellValue = ParseCell(stringValue);
-                jobj.Add(key, cellValue);
+                if(cellValue != null)
+                {
+                    jobj.Add(key, cellValue);
+                }
 
                 if (stringValue != null)
                     IsAllPropertyNull = false;
