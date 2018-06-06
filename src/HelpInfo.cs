@@ -55,7 +55,7 @@ namespace ExcelConverter
         {
             "",
             "More detail can be found on help page: ",
-            "   <http://192.168.8.172/wangg/ExcelConverter/wikis/home>",
+            "   <https://github.com/windsting/ExcelConverter>",
         };
 
         static string[] OptionsForHelp = new string[] { "-h", "--help" };
