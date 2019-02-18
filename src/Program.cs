@@ -80,13 +80,13 @@ namespace ExcelConverter
             Succceed.Add(orgName);
         }
 
-        private static async void WriteTextFile(string outName, string text)
+        private static void WriteTextFile(string outName, string text)
         {
             var path = Path.GetDirectoryName(outName);
             Directory.CreateDirectory(path);
             using (var writer = new StreamWriter(outName))
             {
-                await writer.WriteAsync(text);
+                writer.Write(text);
             }
         }
     }
