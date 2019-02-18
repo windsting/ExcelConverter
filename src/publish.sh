@@ -1,7 +1,7 @@
 
 BANDIZIP="/c/Program Files/Bandizip/Bandizip.exe"
 NSISEXE="/d/portable/NSISPortable/App/NSIS/Bin/makensis.exe"
-SCP_DEST="wangg@192.168.8.173:soft/"
+SCP_DEST="wangg@192.168.1.13:soft/"
 
 rm -rf out
 
