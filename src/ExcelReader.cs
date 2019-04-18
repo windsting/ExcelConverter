@@ -4,6 +4,7 @@ using OfficeOpenXml;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace ExcelConverter
 {
@@ -11,6 +12,21 @@ namespace ExcelConverter
     {
         public Config Config { get; set; }
         public JArray JArray { get; set; }
+    }
+
+    public class ConvertObj {
+        public string FileName { get; set; }
+        public Config Config { get; set; }
+        public ExcelWorksheets Sheets { get; set; }
+        public Stack<string> SheetStack { get; set; } = new Stack<string>();
+
+        public ConvertObj(ExcelWorksheets sheets, string fileName, Config config)
+        {
+            Sheets = sheets;
+            FileName = fileName;
+            Config = config;
+            SheetStack.Push(sheets[1].Name);
+        }
     }
 
     public class ExcelReader : Singleton<ExcelReader>
@@ -27,42 +43,12 @@ namespace ExcelConverter
 
             using (ExcelPackage package = new ExcelPackage(fileInfo))
             {
-                var worksheet = package.Workbook.Worksheets[1];
-                int rowCount = worksheet.Dimension.End.Row;
-                int colCount = worksheet.Dimension.Columns;
-
-                if (rowCount < MinRowCount)
+                var co = new ConvertObj(package.Workbook.Worksheets, fileName, config);
+                var array = ConvertSheet(co);
+                if (co.SheetStack.Count > 0)
                 {
-                    AppLog.Instance.Log($"invalid rowCount:{rowCount} {nameof(MinRowCount)}:{MinRowCount} in file:\n    {fileName}");
-                    return null;
-                }
-
-                Func<int, int, object> vCell = (r, c) => worksheet.Cells[r, c].Value;
-                Func<int, int, string> sCell = (r, c) =>
-                {
-                    var value = vCell(r, c);
-                    return value?.ToString();
-                };
-
-                config = TryParseConfig(sCell(1, 1)) ?? config;
-
-                List<string> keys = FetchKeys(config, colCount, sCell);
-                var keyCount = keys.Count;
-                if(keyCount < 1)
-                {
-                    AppLog.Instance.Log($"name row has no value in file:\n    {fileName}");
-                    return null;
-                }
-
-                JArray array = new JArray();
-                for (int row = config.NameRow+1; row <= rowCount; ++row)
-                {
-                    Func<int, string> getKey = (c) => keys[c - 1];
-                    Func<int, string> getValue = (c) => sCell(row, c);
-                    var dataRow = worksheet.Cells[row, 1, row, keyCount];
-                    JObject jobj = GenerateObject(keyCount, getKey, getValue);
-                    if (jobj != null)
-                        array.Add(jobj);
+                    var stackContent = JsonConvert.SerializeObject(co.SheetStack);
+                    throw new Exception($"ConvertSheet finished with stack content:{stackContent}");
                 }
 
                 //AppLog.Instance.Log(array.ToString());
@@ -86,6 +72,58 @@ namespace ExcelConverter
                     return propertyName.Substring(0,propertyName.IndexOf(postfix));
 
             return propertyName;
+        }
+
+        static JArray ConvertSheet(ConvertObj co)
+        {
+            var fileName = co.FileName;
+            var config = co.Config;
+            var stack = co.SheetStack;
+            var sheetName = stack.Peek();
+            var worksheet = co.Sheets[sheetName];
+            if (worksheet == null)
+            {
+                throw new Exception($"Invalid referenced sheet name:[{sheetName}]");
+            }
+            int rowCount = worksheet.Dimension.End.Row;
+            int colCount = worksheet.Dimension.Columns;
+
+            if (rowCount < MinRowCount)
+            {
+                AppLog.Instance.Log($"invalid rowCount:{rowCount} {nameof(MinRowCount)}:{MinRowCount} in file:\n    {fileName}");
+                return null;
+            }
+
+            Func<int, int, object> vCell = (r, c) => worksheet.Cells[r, c].Value;
+            Func<int, int, string> sCell = (r, c) =>
+            {
+                var value = vCell(r, c);
+                return value?.ToString();
+            };
+
+            config = TryParseConfig(sCell(1, 1)) ?? config;
+
+            List<string> keys = FetchKeys(config, colCount, sCell);
+            var keyCount = keys.Count;
+            if (keyCount < 1)
+            {
+                AppLog.Instance.Log($"name row has no value in file:\n    {fileName}");
+                return null;
+            }
+
+            JArray array = new JArray();
+            for (int row = config.NameRow + 1; row <= rowCount; ++row)
+            {
+                Func<int, string> getKey = (c) => keys[c - 1];
+                Func<int, string> getValue = (c) => sCell(row, c);
+                var dataRow = worksheet.Cells[row, 1, row, keyCount];
+                JObject jobj = GenerateObject(keyCount, getKey, getValue, co);
+                if (jobj != null)
+                    array.Add(jobj);
+            }
+
+            stack.Pop();
+            return array;
         }
 
         const string ArraySplitters = "|;,";
@@ -135,9 +173,31 @@ namespace ExcelConverter
             return value;
         }
 
-        private static JToken ParseCell(string value) {
+        private static JToken ParseCell(string value, ConvertObj co) {
             if (value == null)
                 return null;
+
+            if (value.StartsWith("[") && value.EndsWith("]"))
+            {
+                value = value.Replace("[", "").Replace("]", "");
+                var parts = value.Split(":");
+                switch (parts[0])
+                {
+                    case "ref":
+                        {
+                            var sheetName = parts[1];
+                            if (co.SheetStack.Contains(sheetName))
+                            {
+                                var strStack = JsonConvert.SerializeObject(co.SheetStack);
+                                throw new Exception($"sheet [{sheetName}] gonna be referenced recursively, convert stack is:{strStack}");
+                            }
+                            co.SheetStack.Push(parts[1]);
+                            return ConvertSheet(co);
+                        }
+                    default:
+                        throw new Exception($"Invalid command:[{parts[0]}]");
+                }
+            }
 
             var array = ParseJArray(value);
             if (array != null)
@@ -146,7 +206,7 @@ namespace ExcelConverter
             return ParseToken(value);
         }
 
-        private static JObject GenerateObject(int keyCount, Func<int, string> getKey, Func<int, string> getValue)
+        private static JObject GenerateObject(int keyCount, Func<int, string> getKey, Func<int, string> getValue, ConvertObj co)
         {
             JObject jobj = new JObject();
             bool IsAllPropertyNull = true;
@@ -159,7 +219,7 @@ namespace ExcelConverter
                 key = ErasePostfix(key);
 
                 var stringValue = getValue(col);
-                var cellValue = ParseCell(stringValue);
+                var cellValue = ParseCell(stringValue, co);
                 if(cellValue != null)
                 {
                     jobj.Add(key, cellValue);
