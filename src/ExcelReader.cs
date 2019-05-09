@@ -19,6 +19,7 @@ namespace ExcelConverter
         public Config Config { get; set; }
         public ExcelWorksheets Sheets { get; set; }
         public Stack<string> SheetStack { get; set; } = new Stack<string>();
+        public Dictionary<string, JArray> NamedSheets { get; set; } = new Dictionary<string, JArray>();
 
         public ConvertObj(ExcelWorksheets sheets, string fileName, Config config)
         {
@@ -126,6 +127,21 @@ namespace ExcelConverter
             return array;
         }
 
+        static JArray GetSheet(string sheetName, ConvertObj co) {
+            co.NamedSheets.TryGetValue(sheetName, out var sheet);
+            if (sheet != null) {
+                return sheet;
+            }
+            if (co.SheetStack.Contains(sheetName)) {
+                var strStack = JsonConvert.SerializeObject(co.SheetStack);
+                throw new Exception($"sheet [{sheetName}] gonna be referenced recursively, convert stack is:{strStack}");
+            }
+            co.SheetStack.Push(sheetName);
+            sheet = ConvertSheet(co);
+            co.NamedSheets.Add(sheetName, sheet);
+            return sheet;
+        }
+
         const string ArraySplitters = "|;,";
         private static JToken ParseJArray(string value, int level = 0) {
             if (level == 0 && value.IndexOf(ArraySplitters[0]) < 0) {
@@ -174,25 +190,18 @@ namespace ExcelConverter
         }
 
         private static JToken ParseRef(string value, ConvertObj co) {
-            if (value.StartsWith("[") && value.EndsWith("]")) {
-                value = value.Replace("[", "").Replace("]", "");
-                var parts = value.Split(":");
-                switch (parts[0]) {
-                    case "ref": {
-                            var sheetName = parts[1];
-                            if (co.SheetStack.Contains(sheetName)) {
-                                var strStack = JsonConvert.SerializeObject(co.SheetStack);
-                                throw new Exception($"sheet [{sheetName}] gonna be referenced recursively, convert stack is:{strStack}");
-                            }
-                            co.SheetStack.Push(parts[1]);
-                            return ConvertSheet(co);
-                        }
-                    default:
-                        throw new Exception($"Invalid command:[{parts[0]}]");
-                }
-            }
-
-            return null;
+            if (!value.StartsWith("[") || !value.EndsWith("]"))
+                return null;
+            value = value.Trim('[', ']');
+            var parts = value.Split(":");
+            switch (parts[0]) {
+                case "ref": {
+                        var sheetName = parts[1];
+                        return GetSheet(sheetName, co);
+                    }
+                default:
+                    throw new Exception($"Invalid command:[{parts[0]}]");
+            } // all paths returned, "return" not necessary
         }
 
         private static JToken ParseCell(string value, ConvertObj co) {
