@@ -177,27 +177,9 @@ namespace ExcelConverter
             if (value == null)
                 return null;
 
-            if (value.StartsWith("[") && value.EndsWith("]"))
-            {
-                value = value.Replace("[", "").Replace("]", "");
-                var parts = value.Split(":");
-                switch (parts[0])
-                {
-                    case "ref":
-                        {
-                            var sheetName = parts[1];
-                            if (co.SheetStack.Contains(sheetName))
-                            {
-                                var strStack = JsonConvert.SerializeObject(co.SheetStack);
-                                throw new Exception($"sheet [{sheetName}] gonna be referenced recursively, convert stack is:{strStack}");
-                            }
-                            co.SheetStack.Push(parts[1]);
-                            return ConvertSheet(co);
-                        }
-                    default:
-                        throw new Exception($"Invalid command:[{parts[0]}]");
-                }
-            }
+            var refData = ParseRef(value, co);
+            if (refData != null)
+                return refData;
 
             var array = ParseJArray(value);
             if (array != null)
@@ -259,6 +241,28 @@ namespace ExcelConverter
             }
 
             return keys;
+        }
+
+        static JToken ParseRef(string value, ConvertObj co) {
+            if (value.StartsWith("[") && value.EndsWith("]")) {
+                value = value.Replace("[", "").Replace("]", "");
+                var parts = value.Split(":");
+                switch (parts[0]) {
+                    case "ref": {
+                            var sheetName = parts[1];
+                            if (co.SheetStack.Contains(sheetName)) {
+                                var strStack = JsonConvert.SerializeObject(co.SheetStack);
+                                throw new Exception($"sheet [{sheetName}] gonna be referenced recursively, convert stack is:{strStack}");
+                            }
+                            co.SheetStack.Push(parts[1]);
+                            return ConvertSheet(co);
+                        }
+                    default:
+                        throw new Exception($"Invalid command:[{parts[0]}]");
+                }
+            }
+
+            return null;
         }
     }
 }
