@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace ExcelConverter
 {
@@ -189,18 +190,75 @@ namespace ExcelConverter
             return value;
         }
 
+        private static List<JToken> FetchRows(ConvertObj co, string sheetName, string refColName, string[] refColValues) {
+            var jarray = GetSheet(sheetName, co);
+            List<JToken> rows = new List<JToken>();
+            foreach(var refValue in refColValues) {
+                var lst = jarray.Children<JToken>();
+                var matched = lst.Where(o => o[refColName] != null && o[refColName].ToString() == refValue);
+                if (matched != null) {
+                    foreach(var jobj in matched) {
+                        rows.Add(jobj);
+                    }
+                }
+            }
+
+            return rows;
+        }
+
+        private static List<JToken> GetRefList(string[] parts, string value, ConvertObj co) {
+            var sheetName = parts[1];
+            var refCol = parts[2];
+            var refValues = SubArray(parts, 3, parts.Length - 3);
+            var lst = FetchRows(co, sheetName, refCol, refValues);
+            return lst;
+        }
+
+        public static T[] SubArray<T>(T[] data, int index, int length) {
+            if(length <= 0) {
+                return new T[] { };
+            }
+            T[] result = new T[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
+        }
+
+        public static JArray ToJarray<T>(IEnumerable<T> lst) {
+            var jarray = new JArray();
+            foreach (var obj in lst)
+                jarray.Add(obj);
+            return jarray;
+        }
+
         private static JToken ParseRef(string value, ConvertObj co) {
             if (!value.StartsWith("[") || !value.EndsWith("]"))
                 return null;
-            value = value.Trim('[', ']');
-            var parts = value.Split(":");
+            var strparts = value.Trim('[', ']');
+            var parts = strparts.Split(":");
+            if(parts.Length < 2) {
+                throw new Exception($"no sheet name provided in ref cell: {value}");
+            }
             switch (parts[0]) {
                 case "ref": {
                         var sheetName = parts[1];
                         return GetSheet(sheetName, co);
                     }
+                case "refOne": {
+                        var lst = GetRefList(parts, value, co);
+                        if (lst.Count == 0) {
+                            throw new Exception($"no value found for reference: {value}");
+                        }
+                        if (lst.Count > 1) {
+                            throw new Exception($"more than ONE values found for reference: {value}, they are: {JsonConvert.SerializeObject(lst, Formatting.Indented)}");
+                        }
+                        return lst[0];
+                    }
+                case "refMany": {
+                        var lst = GetRefList(parts, value, co);
+                        return ToJarray(lst);
+                    }
                 default:
-                    throw new Exception($"Invalid command:[{parts[0]}]");
+                    throw new Exception($"Invalid command:[{parts[0]}] in {nameof(ParseRef)} value is:{value}");
             } // all paths returned, "return" not necessary
         }
 
