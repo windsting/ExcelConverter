@@ -15,6 +15,7 @@ namespace ExcelConverter
         public bool Indent { get; set; } = DefaultIndent;
         public bool KeepExtension { get; set; } = DefaultExtensionSetting;
         public bool Quiet { get; set; } = DefaultQuiet;
+        public bool StopOnEmptyRow { get; set; } = DefaultStopOnEmptyRow;
 
         public Newtonsoft.Json.Formatting Formatting
         {
@@ -27,6 +28,7 @@ namespace ExcelConverter
         const bool DefaultIndent = false;
         const bool DefaultExtensionSetting = false;
         const bool DefaultQuiet = false;
+        const bool DefaultStopOnEmptyRow = false;
         public List<string> NoneOption { get; set; } = new List<string>();
 
         public List<string> MandatoryOptions = new List<string>();
@@ -132,6 +134,7 @@ namespace ExcelConverter
             NamePair.Create("p",$"{nameof(PassPostfix)}"),
             NamePair.Create("e",$"{nameof(ErasePostfix)}"),
             NamePair.Create("n",$"{nameof(NameRow)}"),
+            NamePair.Create("s",$"{nameof(StopOnEmptyRow)}"),
         };
 
         static string GetFullName(string shortOption)

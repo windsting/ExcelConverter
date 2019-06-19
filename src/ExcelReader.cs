@@ -120,6 +120,9 @@ namespace ExcelConverter
                 Func<int, string> getValue = (c) => sCell(row, c);
                 var dataRow = worksheet.Cells[row, 1, row, keyCount];
                 JObject jobj = GenerateObject(keyCount, getKey, getValue, co);
+                if (jobj == null && co.Config.StopOnEmptyRow) {
+                    break;
+                }
                 if (jobj != null)
                     array.Add(jobj);
             }

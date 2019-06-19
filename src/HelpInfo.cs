@@ -11,6 +11,7 @@ namespace ExcelConverter
         {
             "No file or directory specified.",
             "Usage: ExcelConverter [-i | --indent] [-q | --quiet] [-k | --keep-extension]",
+            "                      [-s | --stop-on-empty-row]",
             "                      [-p=postfixToPass | --postfix-to-pass=postfixToPass]",
             "                      [-e=postfixToErase | --erase-postfix=postfixToErase]",
             "                      [-n=rowNumberOfName | --name-row=rowNumberOfName]",
@@ -49,6 +50,9 @@ namespace ExcelConverter
             "  -n, --name-row       specify the row number for the row contains",
             "                       property names. default value is 2, left the 1st",
             "                       row for describe name",
+            "  -s, --stop-on-empty-row",
+            "                       stop converting on the first empty row, the result",
+            "                       only contains datas above the empty row",
         };
 
         static string[] ExtraInfo = new string[] 
