@@ -14,6 +14,7 @@ ExcelConverter 有多个命令选项，以便自定义转换过程
 |-e|--erase-postfix|移除指定后缀|字符串|`-e=ClientOnly` `--pass-postfix=ClientOnly`|无|
 |-n|--name-row|指定 **name-row** 的行号|整数|`-n=1` `--name-row=4`|2|
 |-o|--output|指定输出目录，不存在则创建|字符串|`-o=output_dir` `-ooutput=config_dir`|每个 Excel 文件所在目录|
+|-s|--stop-on-empty-row|在工作表中遇到空行就停止读取|无| `-s` `--stop-on-empty-row`|读取工作表的所有行|
 
 ## 选项详情
 
@@ -303,6 +304,15 @@ E:\test>dir
                3 File(s)         17,648 bytes
                2 Dir(s)  140,395,974,656 bytes free
 ```
+
+### -s --stop-on-empty-row
+
+ExcelConverter 默认情况下会读取每个输入文件第一个 工作表(Sheet) 的所有行，并试图把每一行转化为一个 `json` 对象，如果某些行数据暂时被忽略（不需要被转化），则可以使用此选项，并确保：
+
+1. 工作表中有一个空行，此行不填写任何数据
+2. 待忽略的数据行都位于此行以下
+
+**注意**：此选项在遇到第一个空行时生效，此行以后的数据不会读取。
 
 ## 文件选项
 
